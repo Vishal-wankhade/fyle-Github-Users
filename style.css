@@ -326,3 +326,9 @@ input[type='text']{
     font-family: var(--Font);
     font-weight: 700;
 }
+.repowrap p{
+    padding: 5px;
+    color: var(--headingColor);
+    font-family: var(--Font);
+    font-weight: 700;
+}
