@@ -275,10 +275,10 @@ input[type='text']{
         align-items: center;
     }
     .searchWrap{
-        width: 90%;
+        width: 100%;
     }
     .RepoSearchWrap{
-        width: 90%;
+        width: 100%;
     }
     .repo-can{
         width: 80%;
@@ -318,5 +318,11 @@ input[type='text']{
 #pagination button.active{
     background-color: var(--headingColor);
     color: white;
+    font-weight: 700;
+}
+.repo-can p{
+    padding: 5px;
+    color: var(--headingColor);
+    font-family: var(--Font);
     font-weight: 700;
 }
