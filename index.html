@@ -8,78 +8,83 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">  <title>Fyle Assignment</title>
-    <!-- <link src="/index.js" type="javaScript" /> -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>Fyle Assignment</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="loader">
-         <img src="Skateboarding.gif" alt="Loading...." />
+        <img src="Skateboarding.gif" alt="Loading...." />
     </div>
     <div class="searchWrap">
-        <input type="text" placeholder="Enter a valide Github user's username" onchange='searchUser(event)' />
-      </div>
+        <input type="text" placeholder="Enter a valid Github user's username" onchange='searchUser(event)' />
+    </div>
     <main class="container">
-      
-      <div class="profile">
+        <div class="profile">
 
-      </div>
-      <div class="RepoSearchWrap">
-        <input type="text" placeholder="Enter a valid name of the repository" onchange='searchRepo(event)' />
-      </div>
-      <div class="repo-wrap">
-       
+        </div>
+        <div class="RepoSearchWrap">
+            <input type="text" placeholder="Enter a valid name of the repository" onchange='searchRepo(event)' />
+        </div>
+        <div class="repo-wrap">
 
-      </div>
-      <div id="pagination"></div>
+        </div>
+        <div id="pagination"></div>
     </main>
     <script>
-     var loader = document.querySelector('.loader');
-     const search = document.querySelector(".searchWrap")
-    const container = document.querySelector(".container");
-    const profile = document.querySelector(".profile");
-    const repoWrap = document.querySelector(".repo-wrap");
-    const paginationContainer = document.getElementById('pagination');
+        var loader = document.querySelector('.loader');
+        const search = document.querySelector(".searchWrap")
+        const container = document.querySelector(".container");
+        const profile = document.querySelector(".profile");
+        const repoWrap = document.querySelector(".repo-wrap");
+        const paginationContainer = document.getElementById('pagination');
 
-    var loading;
-    var data;
-    var username = 'johnpapa';
-    const reposPerPage = 10;
-    let currentPage = 1;
+        var loading;
+        var data;
+        var username = 'johnpapa';
+        const reposPerPage = 10;
+        let currentPage = 1;
 
-    function searchUser(e) {
-        username = e.target.value;
-        fetchData();
-    }
-
-    async function fetchData() {
-        try {
-            loading = true;
-            loader.style.display = 'block';
-            container.style.display = 'none';
-            search.style.display = 'none';
-
-            const res = await fetch(`https://api.github.com/users/${username}`);
-            data = await res.json();
-
-            const repos = await fetch(`${data.repos_url}?per_page=${reposPerPage}&page=${currentPage}`);
-            const reposData = await repos.json();
-
-            fecthRepos(reposData);
-            updateUI();
-            displayPagination(data.public_repos);
-        } catch (error) {
-            console.log(error);
-        } finally {
-            loading = false;
-            loader.style.display = 'none';
-            container.style.display = 'block';
-            search.style.display = 'block';
+        function searchUser(e) {
+            username = e.target.value;
+            fetchData();
         }
-    }
 
-    fetchData();
-        
+        async function fetchData() {
+            try {
+                loading = true;
+                loader.style.display = 'block';
+                container.style.display = 'none';
+                search.style.display = 'none';
+
+                const res = await fetch(`https://api.github.com/users/${username}`);
+                data = await res.json();
+
+                const repos = await fetch(`${data.repos_url}?per_page=${reposPerPage}&page=${currentPage}`);
+                const reposData = await repos.json();
+
+                await Promise.all(reposData.map(async (repo) => {
+                    const languagesURL = repo.languages_url;
+                    const languagesResponse = await fetch(languagesURL);
+                    const languagesData = await languagesResponse.json();
+
+                    repo.languages = Object.keys(languagesData);
+                }));
+
+                fecthRepos(reposData);
+                updateUI();
+                displayPagination(data.public_repos);
+            } catch (error) {
+                console.log(error);
+            } finally {
+                loading = false;
+                loader.style.display = 'none';
+                container.style.display = 'block';
+                search.style.display = 'block';
+            }
+        }
+
+        fetchData();
 
         function updateUI() {
             profile.innerHTML = `
@@ -87,14 +92,11 @@
                     <img src='${data.avatar_url}' alt="Profile Picture" width="100">
                 </div>
                 <div class='info'>
-                
-                    ${data.name? `<h1>${data.name}</h1>` : `<h6>Name not available</h6>`}
-
-                    <h3>${data.bio || 'Bio not  available'}</h3>
+                    ${data.name ? `<h1>${data.name}</h1>` : `<h6>Name not available</h6>`}
+                    <h3>${data.bio || 'Bio not available'}</h3>
                     <h3><i class="fas fa-map-marker-alt"></i> ${data.location ? data.location : "Location not available"}</h3>
                     <h3>${data.public_repos ? `Public Repos : ${data.public_repos}` : "" } </h3>
                     <a class="profileLink" href=${data.html_url}> <i class="fa-solid fa-link"></i> ${data.html_url}</a>
-                    
                 </div>
             `;
         }
@@ -106,14 +108,22 @@
                 divWrap.setAttribute("class", "repo-can");
                 const a = document.createElement("a");
                 const para = document.createElement("p");
-                para.innerText = ele.description ? ele.description : 'No description available';;
+
+                para.innerText = ele.description ? ele.description : 'No description available';
                 a.innerText = ele.name.charAt(0).toUpperCase() + ele.name.slice(1);
 
                 repoWrap.appendChild(divWrap);
                 divWrap.appendChild(a);
                 divWrap.appendChild(para);
+
+                if (ele.languages && ele.languages.length > 0) {
+                    const languagesPara = document.createElement("p");
+                    languagesPara.innerText = `Languages: ${ele.languages.join(', ')}`;
+                    divWrap.appendChild(languagesPara);
+                }
+
                 a.setAttribute("href", `${ele.html_url}`);
-                  
+
                 a.classList.add("repoLink")
                 divWrap.classList.add("repowrap");
                 para.classList.add("desc");
@@ -151,42 +161,56 @@
         }
 
         async function searchRepo(e) {
-    const reponame = e.target.value;
-    try {
-        const res = await fetch(`https://api.github.com/search/repositories?q=${reponame}+user:${username}`);
-        const searchData = await res.json();
+            const reponame = e.target.value;
+            try {
+                const res = await fetch(`https://api.github.com/search/repositories?q=${reponame}+user:${username}`);
+                const searchData = await res.json();
 
-        // Check if any repositories are found
-        if (searchData.items.length === 0) {
-            console.log('No matching repositories found');
-            // You can handle the case where no matching repositories are found, e.g., display an error message.
-        } else {
-            // Display the repositories
-            repoWrap.innerHTML = '';
-            searchData.items.forEach(repo => {
-                const divWrap = document.createElement("div");
-                divWrap.setAttribute("class", "repo-can");
-                const a = document.createElement("a");
-                const para = document.createElement("p");
-                para.innerText = repo.description ? repo.description : 'No description available';
-                a.innerText = repo.name.charAt(0).toUpperCase() + repo.name.slice(1);
+                // Check if any repositories are found
+                if (searchData.items.length === 0) {
+                    console.log('No matching repositories found');
+                    // You can handle the case where no matching repositories are found, e.g., display an error message.
+                } else {
+                    // Display the repositories
+                    repoWrap.innerHTML = '';
+                    searchData.items.forEach(repo => {
+                        const divWrap = document.createElement("div");
+                        divWrap.setAttribute("class", "repo-can");
+                        const a = document.createElement("a");
+                        const para = document.createElement("p");
+                        para.innerText = repo.description ? repo.description : 'No description available';
+                        a.innerText = repo.name.charAt(0).toUpperCase() + repo.name.slice(1);
 
-                repoWrap.appendChild(divWrap);
-                divWrap.appendChild(a);
-                divWrap.appendChild(para);
-                a.setAttribute("href", `${repo.html_url}`);
+                        repoWrap.appendChild(divWrap);
+                        divWrap.appendChild(a);
+                        divWrap.appendChild(para);
 
-                a.classList.add("repoLink");
-                divWrap.classList.add("repowrap");
-                para.classList.add("desc");
-            });
+                        if (repo.languages_url) {
+                            const languagesResponse =  fetch(repo.languages_url);
+                            const languagesData =  languagesResponse.json();
+                            const languages = Object.keys(languagesData);
+
+                            if (languages.length > 0) {
+                                const languagesPara = document.createElement("p");
+                                languagesPara.innerText = ` ${languages.join(', ')}`;
+                                divWrap.appendChild(languagesPara);
+                              
+                            }
+                            languagesPara.classList.add("lang");
+                                languagesPara.style.color="blue";
+                        }
+
+                        a.setAttribute("href", `${repo.html_url}`);
+
+                        a.classList.add("repoLink");
+                        divWrap.classList.add("repowrap");
+                        para.classList.add("desc");
+                    });
+                }
+            } catch (error) {
+                console.log("Error in repo search:", error);
+            }
         }
-    } catch (error) {
-        console.log("Error in repo search:", error);
-    }
-}
-
-
     </script>
 </body>
 </html>
